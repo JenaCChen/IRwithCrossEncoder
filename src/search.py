@@ -47,9 +47,3 @@ def search(query: str, domain: str, top_k: int = 10):
     scores = model.predict(prompts)
     best_idx = np.argsort(scores)[-top_k:]  # top-k matches
     return [ids[idx] for idx in best_idx]
-
-
-print(search('test', 'fitness_&_health'))
-
-
-
