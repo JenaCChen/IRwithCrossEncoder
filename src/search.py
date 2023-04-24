@@ -2,10 +2,10 @@ from sentence_transformers import CrossEncoder
 from load_data import insert_docs, load_data
 import pymongo
 import numpy as np
-from utils import timer
+from utils import timer, get_device
 
-
-model = CrossEncoder('cross-encoder/mmarco-mMiniLMv2-L12-H384-v1')
+device = get_device()
+model = CrossEncoder('cross-encoder/mmarco-mMiniLMv2-L12-H384-v1', device=device)
 
 client = pymongo.MongoClient("localhost", 27017)
 db = client["nfcorpus"]
@@ -17,7 +17,7 @@ if not "nf_docs" in db.list_collection_names():
     insert_docs(load_data(corpus_path))
 
 
-def no_domain_search(query: str, top_k: int):
+def no_domain_search(query: str, top_k: int = 10):
     """
     Performs search without domain classes, used to compute NDCG scores
     """
