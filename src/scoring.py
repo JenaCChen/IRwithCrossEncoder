@@ -133,8 +133,8 @@ def generate_all_experiments_results() -> List[List[float]]:
         # print(sc)
         scores.append(sc)
     print(scores)
-    with open('cross_encoder_scores_balance_rescaled.csv', 'w') as f:
-        f.write('ce_balance_rescaled\n')
+    with open('cross_encoder_scores_classification.csv', 'w') as f:
+        f.write('ce_classification\n')
         for score in scores:
             f.write(f'{score}\n')
     # return scores
