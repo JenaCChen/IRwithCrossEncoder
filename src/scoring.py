@@ -124,19 +124,20 @@ def generate_all_experiments_results() -> List[List[float]]:
     scores = []
     print('Searching starts...')
     for (query_id, query_text) in queries:
-        scores.append(get_score(
+        sc = get_score(
             query_id=query_id,
-            matched_docs=no_domain_search(query_text),
+            matched_docs=no_domain_search(query_text, fine_tune=True),
             gold_standard=gold_standard,
             gold_scores=get_gold_score(query_id, inv_gold_standard)
         )
-        )
+        # print(sc)
+        scores.append(sc)
     print(scores)
-    with open('cross_encoder_scores_ft.csv', 'w') as f:
-        f.write('cross_encoder\n')
+    with open('cross_encoder_scores_balance_rescaled.csv', 'w') as f:
+        f.write('ce_balance_rescaled\n')
         for score in scores:
             f.write(f'{score}\n')
     # return scores
 
-
-generate_all_experiments_results()
+if __name__=='__main__':
+    generate_all_experiments_results()
