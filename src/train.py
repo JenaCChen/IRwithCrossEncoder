@@ -6,11 +6,13 @@ import torch
 from utils import get_device
 import random
 from collections import Counter
+from load_data import doc_lookup, query_lookup
 
 random.seed(10)
 client = pymongo.MongoClient("localhost", 27017)
 db = client["nfcorpus"]
 
+# Used for re-scaling the relevancy score
 scaled_label = {2: 10, 1: 1, 0: 0}
 # scaled_label = {2: 1, 1: 0.1, 0: 0}
 
@@ -53,20 +55,10 @@ class TextDataset(Dataset):
         else:
             return input_ids.to(device), attention_mask.to(device)
 
-
-def doc_lookup(doc_id):
-    coll = db['nf_docs']
-    doc = coll.find({'_id': doc_id})
-    return doc
-
-
-def query_lookup(query_id):
-    coll = db['nf_queries']
-    query = coll.find({'query_id': query_id})
-    return query
-
-
 def compile_train_set(limit: int = 323):
+    """
+    Compiles training set with data augmentation and label balancing, the param defines the number queries sampled
+    """
     docs_coll = db['nf_docs']
     query_coll = db['nf_queries']
 
@@ -74,12 +66,9 @@ def compile_train_set(limit: int = 323):
     queries = query_coll.aggregate([
         {"$match": {'query_type': 'train'}},
         {"$sample": {"size": limit}}
-    ])  # random
+    ])
 
-    sent_contents = []
-    sent_labels = []
-    label_one_contents = []
-    label_one_labels = []
+    sent_contents, sent_labels, label_one_contents, label_one_labels = [], [], [], []
     if queries is not None:
         for query in queries:
             rel_docs = query['score']  # # {'doc_id': score, ...}
@@ -117,6 +106,9 @@ def compile_train_set(limit: int = 323):
 
 
 def train(model, optimizer, loss_fn, device, train_dataset, epoch, model_path):
+    """
+    Train and save the model
+    """
     model = model.to(device)
     print(device)
     model.train()
@@ -133,11 +125,13 @@ def train(model, optimizer, loss_fn, device, train_dataset, epoch, model_path):
             if j % epoch == 0:
                 print(round(epoch_loss / print_loss_freq, 2))
                 epoch_loss = 0
-        # print(f'Epoch {i + 1} out of {epoch}: Loss {epoch_loss}')
     torch.save(model.state_dict(), model_path)
 
 
 def inference(device, test_dataset):
+    """
+    Make inferences with the model trained
+    """
     model_name = 'cross-encoder/mmarco-mMiniLMv2-L12-H384-v1'
     model = AutoModelForSequenceClassification.from_pretrained(model_name)
     model.load_state_dict(torch.load(model_path))
@@ -151,6 +145,10 @@ def inference(device, test_dataset):
 
 
 def predict(device, prompts: list):
+    """
+    Make predictions given the param list of (query, document) input,
+    for server use
+    """
     test_dataset = TextDataset(prompts)
     test_dataset = DataLoader(test_dataset, batch_size=batch, shuffle=False)
     scores = inference(device, test_dataset)

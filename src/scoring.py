@@ -14,7 +14,7 @@ from search import no_domain_search
 top_k = 10
 top_k = 10
 s_index = 'nf_docs'
-data_dir = 'data/nfcorpus-pa5/'
+data_dir = 'nfcorpus'
 
 def _as_decimal(num: float) -> float:
     # Always round .5 up, not towards even numbers as is the default
@@ -111,15 +111,13 @@ def get_gold_score(query_id: str, inv_gold_standard: Dict[str, List], k: int = t
     y_true.extend([0] * (k - len(y_true)))
     return y_true
 
-def generate_all_experiments_results() -> List[List[float]]:
+
+def generate_cross_encoder_NDCG() -> list[float]:
     """
-    return a nested list (table) of shape 323*4. Each row stores the NDCG@10 store from the 4 options on a query.
-    The rows should follow the order of the queries from queries.jsonl
-    The columns should follow the order the options from the HW documentation
-    use _as_decimal to round up each score
+    Generate and save to file a list of the NDCG@10 scores of the cross-encoder model
     """
     queries = load_query(data_dir)
-    gold_standard = load_qrels(f'{data_dir}test.tsv')
+    gold_standard = load_qrels(Path.joinpath(data_dir, 'test.tsv'))
     inv_gold_standard = invert_gold_standard(gold_standard)
     scores = []
     print('Searching starts...')
@@ -130,14 +128,12 @@ def generate_all_experiments_results() -> List[List[float]]:
             gold_standard=gold_standard,
             gold_scores=get_gold_score(query_id, inv_gold_standard)
         )
-        # print(sc)
         scores.append(sc)
-    print(scores)
     with open('cross_encoder_scores_classification.csv', 'w') as f:
         f.write('ce_classification\n')
         for score in scores:
             f.write(f'{score}\n')
-    # return scores
+
 
 if __name__=='__main__':
-    generate_all_experiments_results()
+    generate_cross_encoder_NDCG()
